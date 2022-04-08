@@ -24,3 +24,8 @@ also available at docker-hub
 ```
 docker pull julek3335/recruitment-task:1
 ```
+
+# Possible improvements
+- error handling
+- further optimizations of docker iamge
+- let Kubernetes/Openshift restart malfunction cointainer
