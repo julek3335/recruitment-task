@@ -1,9 +1,9 @@
 <h1>Flask App</h1>
 
 <form method="get" action="{{ url_for('currentIp_endpoint') }}">
-    <button type="submit" class="btn btn-danger">current ip</button>
+    <button type="submit">current ip</button>
 </form>
 
-<form method="get" action="/history">
-    <button type="submit" class="btn btn-danger">history</button>
+<form method="get" action="{{ url_for('history_endpoint') }}">
+    <button type="submit">history</button>
 </form>

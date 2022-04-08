@@ -14,10 +14,11 @@ app.config.update(
 def home():
     return render_template("index.html")
 
-
+# a list that stores the IP addresses of clients who have used the application in the past 
 ip_log = []
 
-@app.route('/api')
+# routing handling current IP
+@app.route('/currentIP')
 @accept('application/json')
 def currentIp_endpoint():
     ip_log.append(request.remote_addr)
@@ -56,15 +57,18 @@ def currentIp_endpoint_xml():
 
     return app.response_class(ET.tostring(root), mimetype='application/xml')
 
+# routing handling clients IP adresses that used app in the past
 @app.route('/history')
 @accept('application/json')
 def history_endpoint():
     
     return jsonify({'visitors':ip_log})
 
+
 @history_endpoint.support('text/plain')
 def history_endpoint_text():
     return app.response_class(' '.join([str(elem) for elem in ip_log]), mimetype='text/plain')
+
 
 @history_endpoint.support('text/html')
 def history_endpoint_html():
@@ -74,11 +78,13 @@ def history_endpoint_html():
 
     return output
 
+
 @history_endpoint.support('text/yaml')
 def history_endpoint_yaml():
     output = yaml.dump(ip_log, explicit_start=True, default_flow_style=False)
 
     return app.response_class(output, mimetype='text/yaml')
+
 
 @history_endpoint.support('application/xml')
 def history_endpoint_yaml():
