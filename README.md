@@ -14,7 +14,7 @@ docker-compose up
 ```
 App is listening on port 5000
 
-# Endopints
+# Endpoints
 
 - /currentIP - returns IP of requesting client,
 - /history - returns a list of clients IP adresses that used app in the past
