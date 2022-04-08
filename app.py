@@ -2,12 +2,21 @@ from flask import Flask, jsonify, request, render_template
 from flask_accept import accept
 import xml.etree.ElementTree as ET
 import yaml
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 
 app = Flask(__name__)
 
 app.config.update(
     DEBUG = True,
     ENV = 'develop'
+)
+
+# limiter limits the number of queries for each client
+limiter = Limiter(
+    app,
+    key_func=get_remote_address,
+    default_limits=[ "100 per minute", "2 per second"]
 )
 
 @app.route('/')
