@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, render_template
 from flask_accept import accept
 import xml.etree.ElementTree as ET
 import yaml
@@ -9,6 +9,11 @@ app.config.update(
     DEBUG = True,
     ENV = 'develop'
 )
+
+@app.route('/')
+def home():
+    return render_template("index.html")
+
 
 ip_log = []
 
@@ -91,4 +96,4 @@ def history_endpoint_yaml():
 
 
 if __name__ == '__main__':
-    app.run()
+    app.run(host='0.0.0.0')
