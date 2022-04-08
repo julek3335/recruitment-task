@@ -19,3 +19,8 @@ App is listening on port 5000
 - /currentIP - returns IP of requesting client,
 - /history - returns a list of clients IP adresses that used app in the past
 - / - home page with simple UI 
+
+also available at docker-hub
+```
+docker pull julek3335/recruitment-task:1
+```
