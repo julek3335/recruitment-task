@@ -4,13 +4,36 @@ import xml.etree.ElementTree as ET
 import yaml
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
+from flask_sqlalchemy import SQLAlchemy
+from flask_marshmallow import Marshmallow
 
 app = Flask(__name__)
 
 app.config.update(
     DEBUG = True,
-    ENV = 'develop'
+    ENV = 'develop',
+    SQLALCHEMY_DATABASE_URI = "sqlite:///app.db",
+    SQLALCHEMY_ECHO = True,
+    SQLALCHEMY_TRACK_MODIFICATION = True
 )
+
+db = SQLAlchemy()
+ma = Marshmallow()
+db.app = app
+
+db.init_app(app)
+ma.init_app(app)
+
+class ipAdresses(db.Model):
+    __tablename__ = 'ipAdresses'
+    _id = db.Column("id", db.Integer, primary_key = True)
+    ip = db.Column(db.String(11))
+
+    def __init__(self, ip):
+        self.ip = ip
+
+
+
 
 # limiter limits the number of queries for each client
 limiter = Limiter(
@@ -18,6 +41,10 @@ limiter = Limiter(
     key_func=get_remote_address,
     default_limits=[ "100 per minute", "2 per second"]
 )
+
+@app.before_first_request
+def create_tables():
+    db.create_all()
 
 @app.route('/')
 def home():
@@ -30,6 +57,10 @@ ip_log = []
 @app.route('/currentIP')
 @accept('application/json')
 def currentIp_endpoint():
+    ip = ipAdresses(ip = request.remote_addr)
+    db.session.add(ip)
+    db.session.commit()
+
     ip_log.append(request.remote_addr)
     return jsonify({'Current Ip':request.remote_addr})
 
@@ -111,4 +142,5 @@ def history_endpoint_yaml():
 
 
 if __name__ == '__main__':
+    db.create_all()
     app.run(host='0.0.0.0')
