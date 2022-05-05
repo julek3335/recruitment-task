@@ -101,8 +101,12 @@ def currentIp_endpoint_xml():
 @app.route('/history')
 @accept('application/json')
 def history_endpoint():
-    
-    return jsonify({'visitors':ip_log})
+    returnList = []
+    query = ipAdresses.query.all()
+    print(query[0].ip)
+    for ip in query:
+        returnList.append(ip.ip)
+    return jsonify({'visitors':returnList})
 
 
 @history_endpoint.support('text/plain')
