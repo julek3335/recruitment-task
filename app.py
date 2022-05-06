@@ -27,7 +27,7 @@ ma.init_app(app)
 class ipAdresses(db.Model):
     __tablename__ = 'ipAdresses'
     _id = db.Column("id", db.Integer, primary_key = True)
-    ip = db.Column(db.String(11))
+    ip = db.Column(db.String(45))
 
     def __init__(self, ip):
         self.ip = ip
@@ -42,6 +42,15 @@ limiter = Limiter(
     default_limits=[ "100 per minute", "2 per second"]
 )
 
+
+def write_to_db(ip):
+    ip = ipAdresses(ip = ip)
+    db.session.add(ip)
+    db.session.commit()
+
+
+
+
 @app.before_first_request
 def create_tables():
     db.create_all()
@@ -50,74 +59,77 @@ def create_tables():
 def home():
     return render_template("index.html")
 
-# a list that stores the IP addresses of clients who have used the application in the past 
-ip_log = []
 
 # routing handling current IP
 @app.route('/currentIP')
-@accept('application/json')
+@accept('text/json')
 def currentIp_endpoint():
-    ip = ipAdresses(ip = request.remote_addr)
-    db.session.add(ip)
-    db.session.commit()
+    client_ip = request.access_route[0]
+    write_to_db(client_ip)
 
-    ip_log.append(request.remote_addr)
-    return jsonify({'Current Ip':request.remote_addr})
+    return jsonify({'Current Ip':client_ip})
 
 @currentIp_endpoint.support('text/plain')
 def currentIp_endpoint_text():
-    ip = request.remote_addr
-    ip_log.append(ip)
-    return app.response_class(ip, mimetype='text/plain')
+    client_ip = request.access_route[0]
+    write_to_db(client_ip)
+
+    return app.response_class(client_ip, mimetype='text/plain')
 
 @currentIp_endpoint.support('text/html')
 def currentIp_endpoint_html():
-    ip_log.append(request.remote_addr)
-    output = "<p>" + request.remote_addr + "<p>"
+    client_ip = request.access_route[0]
+    write_to_db(client_ip)
 
-    return app.response_class(output, mimetype='text/html')
+    return app.response_class("<p>" + client_ip + "<p>", mimetype='text/html')
 
 @currentIp_endpoint.support('text/yaml')
 def currentIp_endpoint_yaml():
-    ip_log.append(request.remote_addr)
-    current_Ip = [request.remote_addr]
-    output = yaml.dump(current_Ip, explicit_start=True, default_flow_style=False)
+    client_ip = request.access_route[0]
+    write_to_db(client_ip)
+
+    output = yaml.dump([client_ip], explicit_start=True, default_flow_style=False)
 
     return app.response_class(output, mimetype='text/yaml')
 
-@currentIp_endpoint.support('application/xml')
+@currentIp_endpoint.support('text/xml')
 def currentIp_endpoint_xml():
-    ip_log.append(request.remote_addr)
+    client_ip = request.access_route[0]
+    write_to_db(client_ip)
+
     root = ET.Element('current_Ip')
-
     usr = ET.SubElement(root, "usr")
-    usr.text = request.remote_addr
+    usr.text = client_ip
 
-    tree = ET.ElementTree(root)
+    return app.response_class(ET.tostring(root), mimetype='text/xml')
 
-    return app.response_class(ET.tostring(root), mimetype='application/xml')
+
+def query_db():
+    returnList = []
+    query = ipAdresses.query.all()
+
+    for row in query:
+        returnList.append(row.ip)
+    
+    return returnList
+
 
 # routing handling clients IP adresses that used app in the past
 @app.route('/history')
-@accept('application/json')
+@accept('text/json')
 def history_endpoint():
-    returnList = []
-    query = ipAdresses.query.all()
-    print(query[0].ip)
-    for ip in query:
-        returnList.append(ip.ip)
-    return jsonify({'visitors':returnList})
+    return jsonify({'visitors':query_db()})
 
 
 @history_endpoint.support('text/plain')
 def history_endpoint_text():
-    return app.response_class(' '.join([str(elem) for elem in ip_log]), mimetype='text/plain')
+    return app.response_class(' '.join([str(elem) for elem in query_db()]), mimetype='text/plain')
 
 
 @history_endpoint.support('text/html')
 def history_endpoint_html():
     output = ''
-    for adress in ip_log:
+    for adress in query_db():
         output += "<p>" + adress + "<p>"
 
     return output
@@ -125,23 +137,20 @@ def history_endpoint_html():
 
 @history_endpoint.support('text/yaml')
 def history_endpoint_yaml():
-    output = yaml.dump(ip_log, explicit_start=True, default_flow_style=False)
+    output = yaml.dump(query_db(), explicit_start=True, default_flow_style=False)
 
     return app.response_class(output, mimetype='text/yaml')
 
 
-@history_endpoint.support('application/xml')
+@history_endpoint.support('text/xml')
 def history_endpoint_yaml():
     root = ET.Element('visitors')
 
-    for ip in ip_log:
+    for ip in query_db():
         user = ET.SubElement(root, "user")
         user.text = ip
 
-
-    tree = ET.ElementTree(root)
-
-    return app.response_class(ET.tostring(root), mimetype='application/xml')
+    return app.response_class(ET.tostring(root), mimetype='text/xml')
 
 
 
