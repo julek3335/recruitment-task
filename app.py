@@ -4,8 +4,9 @@ import xml.etree.ElementTree as ET
 import yaml
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
-from flask_sqlalchemy import SQLAlchemy
-from flask_marshmallow import Marshmallow
+from models import db
+from models.IpAdresses import IpAdresses
+from models import ma
 
 app = Flask(__name__)
 
@@ -17,21 +18,9 @@ app.config.update(
     SQLALCHEMY_TRACK_MODIFICATION = True
 )
 
-db = SQLAlchemy()
-ma = Marshmallow()
 db.app = app
-
 db.init_app(app)
 ma.init_app(app)
-
-class ipAdresses(db.Model):
-    __tablename__ = 'ipAdresses'
-    _id = db.Column("id", db.Integer, primary_key = True)
-    ip = db.Column(db.String(45))
-
-    def __init__(self, ip):
-        self.ip = ip
-
 
 
 
@@ -44,10 +33,8 @@ limiter = Limiter(
 
 
 def write_to_db(ip):
-    ip = ipAdresses(ip = ip)
-    db.session.add(ip)
-    db.session.commit()
-
+    ip = IpAdresses(ip)
+    ip.db_save()
 
 
 
@@ -104,9 +91,9 @@ def currentIp_endpoint_xml():
     return app.response_class(ET.tostring(root), mimetype='text/xml')
 
 
-def query_db():
+def query_all_ip_adresses():
     returnList = []
-    query = ipAdresses.query.all()
+    query = IpAdresses.query.all()
 
     for row in query:
         returnList.append(row.ip)
@@ -118,18 +105,18 @@ def query_db():
 @app.route('/history')
 @accept('text/json')
 def history_endpoint():
-    return jsonify({'visitors':query_db()})
+    return jsonify({'visitors':query_all_ip_adresses()})
 
 
 @history_endpoint.support('text/plain')
 def history_endpoint_text():
-    return app.response_class(' '.join([str(elem) for elem in query_db()]), mimetype='text/plain')
+    return app.response_class(' '.join([str(elem) for elem in query_all_ip_adresses()]), mimetype='text/plain')
 
 
 @history_endpoint.support('text/html')
 def history_endpoint_html():
     output = ''
-    for adress in query_db():
+    for adress in query_all_ip_adresses():
         output += "<p>" + adress + "<p>"
 
     return output
@@ -137,7 +124,7 @@ def history_endpoint_html():
 
 @history_endpoint.support('text/yaml')
 def history_endpoint_yaml():
-    output = yaml.dump(query_db(), explicit_start=True, default_flow_style=False)
+    output = yaml.dump(query_all_ip_adresses(), explicit_start=True, default_flow_style=False)
 
     return app.response_class(output, mimetype='text/yaml')
 
@@ -146,7 +133,7 @@ def history_endpoint_yaml():
 def history_endpoint_yaml():
     root = ET.Element('visitors')
 
-    for ip in query_db():
+    for ip in query_all_ip_adresses():
         user = ET.SubElement(root, "user")
         user.text = ip
 
