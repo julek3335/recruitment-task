@@ -5,7 +5,7 @@ services:
     ports:
       - "5000:5000"
     volumes:
-      - volumen1:/home
+      - volumen1:/data
 
 volumes:
   volumen1:
